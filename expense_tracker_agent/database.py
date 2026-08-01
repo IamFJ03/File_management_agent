@@ -18,11 +18,11 @@ class DatabaseManager:
 """)
         self.connection.commit()
 
-    def add_expense(self, amount, category, expense_date, description):
+    def add_expense(self, amount, category, description, expense_date):
         self.cursor.execute("""
-        Insert into expense values(?, ?, ?, ?)
+        Insert into expense(amount, category, description, expense_date) values(?, ?, ?, ?)
 """, (amount, category, description, expense_date))
-        self.connection.execute()
+        self.connection.commit()
 
     def get_expense(self):
         self.cursor.execute("select * from expense")
@@ -43,3 +43,6 @@ class DatabaseManager:
         self.cursor.execute("delete from expense where id = ?", (expense_id))
 
         self.connection.commit()
+
+    def close(self):
+        self.connection.close()
