@@ -33,13 +33,43 @@ class DatabaseManager:
         return self.cursor.fetchall()
     
     def update_expense(self, expense_id = None, amount = None, category = None, description = None, expense_date = None):
-        self.cursor.execute("""
-        Update expense set amount = ?, category = ?, description = ?, expense_date = ? where expense_id = ?
-""", (amount, category, description, expense_date, expense_id))
+        query = "Update expense set "
+        params = []
+        update = []
+        if amount is not None:
+            update.append("amount = ?")
+            params.append(amount)
+
+        if category is not None:
+            update.append("category = ?")
+            params.append(category)
+
+        if description is not None:
+            update.append("description = ?")
+            params.append(description)
+
+        if expense_date is not None:
+            update.append("expense_date = ?")
+            params.append(expense_date)
+
+        if not update:
+            return
+
+        query = f"""
+        UPDATE expense
+        SET {", ".join(update)}
+        WHERE id = ?
+    """
+        params.append(expense_id)
+        print("QUERY:")
+        print(query)
+        print("PARAMS:")
+        print(params)
+        self.cursor.execute(query, params)
 
         self.connection.commit()
 
-    def delete_expense(self, expense_id = None, amount = None, category = None, description = None, expense_date = None):
+    def delete_expense(self, expense_id, amount = None, category = None, description = None, expense_date = None):
         query = "delete from expense where 1=1"
         params = []
 
