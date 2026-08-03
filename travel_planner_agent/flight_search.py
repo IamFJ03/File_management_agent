@@ -27,7 +27,7 @@ class FlightSearch:
             raise Exception(result.get("error"))
 
         return result
-    def city_lookup(self):
+    def city_lookup(self, city_name: str):
         response = requests.get(
             "https://api.travelpayouts.com/data/en/cities.json",
             headers=HEADERS,
@@ -35,8 +35,13 @@ class FlightSearch:
         )
 
         response.raise_for_status()
+        cities = response.json()
 
-        return response.json()
+        for city in cities:
+            if city["name"].lower() == city_name.lower():
+                return city
+            
+        return None
 
     def airport_lookup(self):
         response = requests.get(
