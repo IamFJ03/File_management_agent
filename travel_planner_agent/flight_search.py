@@ -10,7 +10,7 @@ HEADERS = {
     "x-access-token": API_TOKEN
 }
 
-class flight_search:
+class FlightSearch:
     def make_request(self, endpoint: str, params: dict | None = None):
         response = requests.get(
             BASE_URL + endpoint,
