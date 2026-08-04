@@ -7,7 +7,7 @@ HEADERS = {
 }
 
 class TrainSearch:
-    def get_train_identifier(self, train_name: str):
+    def train_lookup(self, train_name: str):
         lookup = requests.get(
             "https://api.railradar.in/v1/lookup/trains",
             headers=HEADERS,
@@ -29,6 +29,26 @@ class TrainSearch:
             "message": f"No train found matching '{train_name}'."
             }
 
+    def station_lookup(self, station_name:str):
+        response = requests.get(
+            "https://api.railradar.in/v1/lookup/stations",
+            headers=HEADERS,
+            timeout=20
+        )
+
+        response.raise_for_status()
+        stations = response.json()["data"]
+        station_Code = None
+
+        for code, name in stations.items():
+            if station_name.lower() == name.lower():
+                station_Code = code
+                return station_Code
+
+        return {
+            "success": False,
+            "message": f"No station found matching '{station_name}'."
+        }
 
     def get_train_details(self, train_number: str, halts_only: bool = True):
         response = requests.get(
@@ -39,8 +59,28 @@ class TrainSearch:
         )
 
         response.raise_for_status()
+        data = response.json()["data"]
 
-        return response.json()
+        train = data["train"]
+
+        route = [
+            {
+                "station_name": stop["station"]["name"],
+            "arrival": stop["arrival"],
+            "departure": stop["departure"],
+            "platform": stop["platform"]
+            }
+            for stop in data["route"]
+        ]
+        return {
+        "train_number": train["number"],
+        "train_name": train["name"],
+        "source": train["source"]["name"],
+        "destination": train["destination"]["name"],
+        "category": train["category"],
+        "run_days": train["runDays"],
+        "route": route
+        }
 
     def get_train_status(self, train_number: str,journey_date: str, halts_only: bool = True):
         params = {
@@ -57,8 +97,47 @@ class TrainSearch:
         )
 
         response.raise_for_status()
+        data = response.json()["data"]
+        route = [
+            {
+                "station_name": stop["stationName"],
+            "scheduled_arrival": stop["scheduledArrival"],
+            "actual_arrival": stop["actualArrival"],
+            "scheduled_departure": stop["scheduledDeparture"],
+            "actual_departure": stop["actualDeparture"],
+            "delay_arrival": stop["delayArrival"],
+            "delay_departure": stop["delayDeparture"],
+            "platform": stop["platform"],
+            "status": stop["status"]
+            }
+            for stop in data["route"]
+        ]
 
-        return response.json()
+        exceptions = [
+            {
+"type": exc["type"],
+            "message": exc["message"]
+            }
+            for exc in data["exception", []]
+        ]
+
+        return {
+        "train_number": data["trainNumber"],
+        "train_name": data["trainName"],
+        "journey_date": data["startDate"],
+        "status": data["status"],
+        "delay_minutes": data["delayMinutes"],
+        "current_location": {
+            "station_code": data["currentLocation"]["stationCode"],
+            "status": data["currentLocation"]["status"],
+            "speed_kmph": data["currentLocation"]["speedKmh"]
+        },
+        "previous_halt": data["previousHalt"],
+        "next_halt": data["nextHalt"],
+        "exceptions": exceptions,
+        "route": route,
+        "is_live": data["isLive"]
+    }
 
     def get_trains_by_date(self, source: str, destination: str, date: str, live: bool = True, byCity: bool = True):
 
@@ -77,5 +156,27 @@ class TrainSearch:
         )
 
         response.raise_for_status()
+        data = response.json()["data"]
 
-        return response.json()
+        trains = [
+            {
+                 "train_number": train["train"]["number"],
+            "train_name": train["train"]["name"],
+            "train_type": train["train"]["type"],
+            "run_days": train["train"]["runDays"],
+            "departure": train["from"]["departure"],
+            "arrival": train["to"]["arrival"],
+            "distance_km": train["distance"],
+            "duration_minutes": train["duration"],
+            "total_halts": train["totalHaltsBetween"]
+            }
+            for train in data["trains"]
+        ]
+
+        return {
+            "source": data["from"]["name"],
+        "destination": data["to"]["name"],
+        "date": date,
+        "total_trains": data["count"],
+        "trains": trains
+        }
