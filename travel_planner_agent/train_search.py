@@ -41,7 +41,7 @@ class TrainSearch:
         station_Code = None
 
         for code, name in stations.items():
-            if station_name.lower() == name.lower():
+            if station_name.lower() in name.lower():
                 station_Code = code
                 return station_Code
 
@@ -62,16 +62,16 @@ class TrainSearch:
         data = response.json()["data"]
 
         train = data["train"]
-
+        print(data["route"])
         route = [
-            {
-                "station_name": stop["station"]["name"],
-            "arrival": stop["arrival"],
-            "departure": stop["departure"],
-            "platform": stop["platform"]
-            }
-            for stop in data["route"]
-        ]
+        {
+            "station_name": stop["station"]["name"],
+            "arrival": stop.get("arrival"),
+            "departure": stop.get("departure"),
+            "platform": stop.get("platform")
+        }
+        for stop in data["route"]
+    ]
         return {
         "train_number": train["number"],
         "train_name": train["name"],
@@ -97,30 +97,33 @@ class TrainSearch:
         )
 
         response.raise_for_status()
+        
         data = response.json()["data"]
+        print(data["route"])
         route = [
-            {
-                "station_name": stop["stationName"],
-            "scheduled_arrival": stop["scheduledArrival"],
-            "actual_arrival": stop["actualArrival"],
-            "scheduled_departure": stop["scheduledDeparture"],
-            "actual_departure": stop["actualDeparture"],
-            "delay_arrival": stop["delayArrival"],
-            "delay_departure": stop["delayDeparture"],
-            "platform": stop["platform"],
-            "status": stop["status"]
-            }
-            for stop in data["route"]
-        ]
+    {
+        "station_name": stop["stationName"],
+        "scheduled_arrival": stop.get("scheduledArrival"),
+        "actual_arrival": stop.get("actualArrival"),
+        "scheduled_departure": stop.get("scheduledDeparture"),
+        "actual_departure": stop.get("actualDeparture"),
+        "delay_arrival": stop.get("delayArrival"),
+        "delay_departure": stop.get("delayDeparture"),
+        "platform": stop.get("platform"),
+        "status": stop.get("status")
+    }
+    for stop in data["route"]
+]
 
         exceptions = [
-            {
-"type": exc["type"],
-            "message": exc["message"]
-            }
-            for exc in data["exception", []]
-        ]
-
+    {
+        "type": exc["type"],
+        "message": exc["message"]
+    }
+    for exc in data.get("exceptions", [])
+]
+        previous_halt = data.get("previousHalt", {})
+        next_halt = data.get("nextHalt", {})
         return {
         "train_number": data["trainNumber"],
         "train_name": data["trainName"],
@@ -129,14 +132,13 @@ class TrainSearch:
         "delay_minutes": data["delayMinutes"],
         "current_location": {
             "station_code": data["currentLocation"]["stationCode"],
-            "status": data["currentLocation"]["status"],
-            "speed_kmph": data["currentLocation"]["speedKmh"]
+            "status": data["currentLocation"]["status"]
         },
-        "previous_halt": data["previousHalt"],
-        "next_halt": data["nextHalt"],
+        "previous_halt": data["previousHalt"] if previous_halt else None,
+        "next_halt": data["nextHalt"] if next_halt else None,
         "exceptions": exceptions,
         "route": route,
-        "is_live": data["isLive"]
+        "is_live": data.get("isLive")
     }
 
     def get_trains_by_date(self, source: str, destination: str, date: str, live: bool = True, byCity: bool = True):
